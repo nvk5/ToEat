@@ -2,23 +2,30 @@
 import NewDishForm from '../components/NewDishForm.vue'
 import DishCard from '../components/DishCard.vue'
 import SideMenu from '../components/SideMenu.vue'
-import { defineComponent } from 'vue'
+import { computed, defineComponent, onMounted, ref } from 'vue'
 import type IDish from '@/types/IDish'
+import { useRoute } from 'vue-router'
 
-interface IDataDish {
-    filterText: string
-    dishList: IDish[]
-    showNewForm: boolean
-}
 export default defineComponent({
     components: {
         NewDishForm,
         DishCard,
         SideMenu,
     },
-    data: (): IDataDish => ({
-        filterText: '',
-        dishList: [
+    setup() {
+        /*
+         * New Dish Form module
+         * */
+        const filterText = ref<string>('')
+        const showNewForm = ref<boolean>(false)
+        const hideForm = () => {
+            showNewForm.value = false
+        }
+
+        /*
+         * DishList module
+         * */
+        const dishList = ref<IDish[]>([
             {
                 id: '7d9f3f17-964a-4e82-98e5-ecbba4d709a1',
                 name: 'Ghost Pepper Poppers',
@@ -34,41 +41,50 @@ export default defineComponent({
                 name: 'Full Laptop Battery',
                 status: 'Do Not Recommend',
             },
-        ],
-        showNewForm: false,
-    }),
-    computed: {
-        filteredDishList(): IDish[] {
-            return this.dishList.filter((dish) => {
+        ])
+        const filteredDishList = computed<IDish[]>(() => {
+            return dishList.value.filter((dish) => {
                 if (dish.name) {
-                    return dish.name.toLowerCase().includes(this.filterText.toLowerCase())
+                    return dish.name.toLowerCase().includes(filterText.value.toLowerCase())
                 } else {
-                    return this.dishList
+                    return dishList.value
                 }
             })
-        },
-        numberOfDishes(): number {
-            return this.filteredDishList.length
-        },
-    },
-    methods: {
-        addDish(payload: IDish) {
-            this.dishList.push(payload)
-            this.hideForm()
-        },
-        deleteDish(payload: IDish) {
-            this.dishList = this.dishList.filter((dish) => {
+        })
+
+        const numberOfDishes = computed<number>(() => {
+            return filteredDishList.value.length
+        })
+        const addDish = (payload: IDish) => {
+            dishList.value.push(payload)
+            hideForm()
+        }
+        const deleteDish = (payload: IDish) => {
+            dishList.value = dishList.value.filter((dish) => {
                 return dish.id !== payload.id
             })
-        },
-        hideForm() {
-            this.showNewForm = false
-        },
-    },
-    mounted() {
-        const route = this.$route
-        if (route.query.new) {
-            this.showNewForm = true
+        }
+
+        /*
+         * Lifecycle Hooks
+         * */
+
+        onMounted(() => {
+            const route = useRoute()
+            if (route.query.new) {
+                showNewForm.value = true
+            }
+        })
+
+        return {
+            filterText,
+            dishList,
+            showNewForm,
+            filteredDishList,
+            numberOfDishes,
+            hideForm,
+            addDish,
+            deleteDish,
         }
     },
 })
